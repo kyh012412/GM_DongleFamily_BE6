@@ -237,4 +237,121 @@ Dongle.cs
 	}
 ```
 
+### 물리 퍼즐게임 - 물리이벤트로 동글 합치기 [B56]
+
+#### 동글 충돌
+
+1. 조건문으로 까다로운제어를해준다.
+2. 레벨비교 최대레벨확인 상대적위치확인
+3. 위쪽 동글 또는 동일 높이라면 우측동글이 사라지도록 효과를 준다.
+4. 버그를 막기위해 bool 변수 isMerge도 추가해준다.
+
+#### 동글 성장(레벨업)
+
+1. Rigidbody2D.angularVelocity는 자료형이float 다.
+   1. 양수음수로 시계방향 또는 반시계방향으로 구분
+
+#### 물리 보정
+
+1. edit > Project Settings > physics 2d
+   1. Auto Sysnc Transforms 체크
+      1. 트랜스폼과 물리의 차이를 보정
+
+#### 최대 레벨
+
+1. GameManager의 Inspecotr에서 MaxLevel을 2로 잡아준다.
+2. Dongle에서 level을 증가시는 곳에서 조건부 갱신로직을추가해준다.
+3. 테스트
+   Dongle.cs
+
+```cs
+	public bool isMerge; // 합쳐지는 중인지 상태를 제어하는 변수
+
+	CircleCollider2D circleCollider2D;
+
+	void Awake()
+	{
+		rigid = GetComponent<Rigidbody2D>();
+		anim = GetComponent<Animator>();
+		circleCollider2D = GetComponent<CircleCollider2D>();
+	}
+
+	void OnCollisionStay2D(Collision2D other)
+	{
+		//동글 합치기 로직
+		if(other.gameObject.CompareTag("Dongle")){
+			Dongle otherDongle = other.gameObject.GetComponent<Dongle>();
+			if(level == otherDongle.level && !isMerge && !otherDongle.isMerge && level < 7){
+				// 나와 상대편 위치 가져오기
+				float myX = transform.position.x;
+				float myY = transform.position.y;
+				float otherX = other.transform.position.x;
+				float otherY = other.transform.position.y;
+
+				// 1. 내가 아래에 있을 때
+				// 나를 키우고 상대를 숨김
+
+				// 2. 동일한 높이 일때, 내가 오른쪽에 있을 때
+				if(myY < otherY || (myY == otherY && myX>otherX) ){                   
+					// 상대방은 숨기기
+					otherDongle.Hide(transform.position);
+					//나는 레벨업
+					LevelUp();
+				}
+			}
+		}
+	}
+
+	public void Hide(Vector3 targetPos){   
+		isMerge = true;
+		rigid.simulated = false;
+		circleCollider2D.enabled = false;
+		StartCoroutine(HideRoutine(targetPos));
+	}
+
+	IEnumerator HideRoutine(Vector3 targetPos){
+		int frameCount =0;
+
+		while(frameCount<20){
+			frameCount++;
+			transform.position = Vector3.Lerp(transform.position,targetPos,0.5f);
+			yield return null;
+		}
+
+		isMerge = false;
+		gameObject.SetActive(false);
+	}
+
+	void LevelUp(){
+		isMerge = true;
+		// rigid.velocity = Vector2.zero;
+		// rigid.angularVelocity = 0;
+		StartCoroutine(LevelUpRoutine());
+	}
+
+	IEnumerator LevelUpRoutine(){
+		yield return new WaitForSeconds(0.2f);
+		anim.SetInteger("Level",++level); // 실제 레벨 상승을 늦게 하는 이유는 애니메이션 시간 때문!
+
+		GameManager.instance.maxLevel = Mathf.Max(level,GameManager.instance.maxLevel);
+
+		yield return new WaitForSeconds(0.35f);
+		isMerge = false;
+	}
+```
+
+GameManager.cs
+
+```cs
+	public int maxLevel;
+
+	void NextDongle(){
+		Dongle newDongle = GetDongle();
+		lastDongle = newDongle;
+		lastDongle.level = Random.Range(0,maxLevel);
+		lastDongle.gameObject.SetActive(true);
+		StartCoroutine(WaitNext());
+	}
+```
+
 ###
