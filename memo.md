@@ -444,4 +444,131 @@ Dongle.cs
 	}
 ```
 
+### 물리 퍼즐게임 - 게임오버 구현하기 [B58]
+
+#### 점수 추가
+
+1. GameManager.cs에
+2. score 변수를 public으로 두고
+3. dongle을합치기전에 2의 level승만큼 점수를 부여해준다.
+
+#### 경계선 이벤트
+
+1. Line 객체의 태그를 Finish로 해준다.
+2. Dongle에 잇는 Rigidbody 2d 컴포넌트 내에서 Sleeping Mode에서
+   1. Sleeping Mode : 물리 연산을 멈취고 쉬는 상태 모드 설정
+   2. Start Awake값을 never sleep으로 바꿔줘야한다.
+      1. 버전차이인지 never sleep을 하지않아도 잘 연산되었다
+      2. 그전의 문제는 onTriggerStay2d!를 쓰지않아서 동작하지 않았다.
+      3. 다시 never sleep을 사용
+
+#### 게임 오버
+
+GameManager.cs
+
+```cs
+	public int score;
+
+	public bool isOver;
+
+	void NextDongle(){
+		if(isOver) return;
+		//...
+	}
+
+	public void GameOver(){
+		if(isOver) return;
+
+		isOver = true;
+		StartCoroutine(GameOverRoutine());
+	}
+
+	IEnumerator GameOverRoutine(){
+		// 1. 장면 안에 활성화 되어잇는 모든 동글 가져오기
+		Dongle[] dongles = FindObjectsOfType<Dongle>();
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].rigid.simulated = false;
+		}
+
+		// 3. 1번의 목록을 하나씩 접근해서 지우기
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].Hide(Vector3.up*100);
+			yield return new WaitForSeconds(0.1f);
+		}
+	}
+```
+
+Dongle.cs
+
+```cs
+	float deadTime;
+
+	public Rigidbody2D rigid;
+	SpriteRenderer spriteRenderer;
+
+	void Awake()
+	{
+		//...
+		spriteRenderer = GetComponent<SpriteRenderer>();
+	}
+
+	public void Hide(Vector3 targetPos){
+		isMerge = true;
+		rigid.simulated = false;
+		circleCollider2D.enabled = false;
+
+		if(targetPos == Vector3.up * 100){
+			EffectPlay();
+		}
+
+		StartCoroutine(HideRoutine(targetPos));
+	}
+
+	IEnumerator HideRoutine(Vector3 targetPos){
+		int frameCount =0;
+
+		while(frameCount<20){
+			frameCount++;
+			if(targetPos != Vector3.up * 100){
+				transform.position = Vector3.Lerp(transform.position,targetPos,0.5f);
+			}else{
+				transform.localScale = Vector3.Lerp(transform.localScale,Vector3.zero,0.2f);
+			}
+
+			yield return null;
+		}
+
+		GameManager.instance.score += (int)Mathf.Pow(2,level);
+
+		isMerge = false;
+
+		gameObject.SetActive(false);
+	}
+
+	void OnTriggerStay2D(Collider2D other){
+		if(other.CompareTag("Finish")){
+			deadTime += Time.deltaTime;
+
+			if(deadTime >2){
+				// float myConstant = 1f*deadTime/5;
+				// spriteRenderer.color = new Color(myConstant,1-myConstant,1-myConstant);
+				spriteRenderer.color = Color.red;
+				Debug.Log("reded");
+			}
+
+			if(deadTime >5){
+				GameManager.instance.GameOver();
+			}
+		}
+	}
+
+	void OnTriggerExit2D(Collider2D other)
+	{
+		if(other.CompareTag("Finish")){
+			deadTime=0;
+			spriteRenderer.color =Color.white;
+		}
+	}
+```
+
 ###

@@ -1,13 +1,17 @@
 using System;
 using System.Collections;
+using System.Numerics;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using Vector3 = UnityEngine.Vector3;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
     public Dongle lastDongle;
     public int maxLevel;
+    public int score;
+    public bool isOver;
 
     [Header("# Group")]
     public Transform dongleGroup;
@@ -44,6 +48,8 @@ public class GameManager : MonoBehaviour
     }
 
     void NextDongle(){
+        if(isOver) return;
+
         Dongle newDongle = GetDongle();
         lastDongle = newDongle;
         lastDongle.level = Random.Range(0,maxLevel);
@@ -75,5 +81,27 @@ public class GameManager : MonoBehaviour
 
         lastDongle.Drop();
         lastDongle = null;
+    }
+
+    public void GameOver(){
+        if(isOver) return;
+
+        
+        isOver = true;
+        StartCoroutine(GameOverRoutine());
+    }
+
+    IEnumerator GameOverRoutine(){
+        // 1. 장면 안에 활성화 되어잇는 모든 동글 가져오기
+        Dongle[] dongles = FindObjectsOfType<Dongle>();
+        for(int index=0; index< dongles.Length;index++){
+            dongles[index].rigid.simulated = false;
+        }
+
+        // 3. 1번의 목록을 하나씩 접근해서 지우기
+        for(int index=0; index< dongles.Length;index++){
+            dongles[index].Hide(Vector3.up*100);
+            yield return new WaitForSeconds(0.1f);
+        }
     }
 }

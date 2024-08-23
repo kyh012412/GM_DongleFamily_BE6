@@ -9,15 +9,19 @@ public class Dongle : MonoBehaviour
     public bool isDrag; //기본값 false drag를 통해 true를 거쳐서 drop 후 다시 false
     public bool isMerge; // 합쳐지는 중인지 상태를 제어하는 변수
 
-    Rigidbody2D rigid;
+    float deadTime;
+
+    public Rigidbody2D rigid;
     Animator anim;
     CircleCollider2D circleCollider2D;
+    SpriteRenderer spriteRenderer;
 
     void Awake()
     {
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         circleCollider2D = GetComponent<CircleCollider2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
     void OnEnable()
@@ -86,8 +90,11 @@ public class Dongle : MonoBehaviour
         rigid.simulated = false;
         circleCollider2D.enabled = false;
 
-        StartCoroutine(HideRoutine(targetPos));
-        
+        if(targetPos == Vector3.up * 100){
+            EffectPlay();
+        }
+
+        StartCoroutine(HideRoutine(targetPos));        
     }
 
     IEnumerator HideRoutine(Vector3 targetPos){
@@ -95,9 +102,16 @@ public class Dongle : MonoBehaviour
 
         while(frameCount<20){
             frameCount++;
-            transform.position = Vector3.Lerp(transform.position,targetPos,0.5f);
+            if(targetPos != Vector3.up * 100){
+                transform.position = Vector3.Lerp(transform.position,targetPos,0.5f);
+            }else{
+                transform.localScale = Vector3.Lerp(transform.localScale,Vector3.zero,0.2f);
+            }
+
             yield return null;
         }
+
+        GameManager.instance.score += (int)Mathf.Pow(2,level);
 
         isMerge = false;
 
@@ -122,6 +136,31 @@ public class Dongle : MonoBehaviour
 
         yield return new WaitForSeconds(0.35f);
         isMerge = false;
+    }
+
+    void OnTriggerStay2D(Collider2D other){
+        if(other.CompareTag("Finish")){
+            deadTime += Time.deltaTime;
+
+            if(deadTime >2){
+                // float myConstant = 1f*deadTime/5;
+                // spriteRenderer.color = new Color(myConstant,1-myConstant,1-myConstant);
+                spriteRenderer.color = Color.red;
+                Debug.Log("reded");
+            }
+
+            if(deadTime >5){
+                GameManager.instance.GameOver();
+            }
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D other)
+    {
+        if(other.CompareTag("Finish")){
+            deadTime=0;
+            spriteRenderer.color =Color.white;
+        }
     }
 
     void EffectPlay(){
