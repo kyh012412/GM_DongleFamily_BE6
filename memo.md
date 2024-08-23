@@ -116,4 +116,125 @@ public class Dongle : MonoBehaviour
 }
 ```
 
+### 물리 퍼즐게임 - 📦프리펩으로 다양한 동글 생성하기 [B55]
+
+#### 게임 매니저
+
+1. GameManager.cs
+2. Touch Pad 태그에 있는 Event Trigger에 대상을 Dongle에서 GameManager로 변경
+
+#### 동글 생성
+
+1. PlayGround > Dongle Group 객체 추가
+   1. pos 0 8 0
+2. 기존 하이라키에 있는 Dongle 삭제
+
+#### 다양한 동글
+
+1. _코루틴(Coroutine) : 로직 제어를 유니티에게 맡기는 함수_
+
+#### 프레임 설정과 물리 보정
+
+1. 애니메이션 만들기
+2. Dongle Open Prefab으로 간다.
+   1. animator 컴포넌트를 추가한다.
+      1. runtime animator controller는 AcDongle을 연결해준다.
+   2. 애니메이터 내부에는 이미 state와 level (int) 파라미터가 있고 Condition으로 연결되어 있다.
+   3. Create Animation을 해준다.(Level 0)
+   4. 애니메이션 : 오브젝트의 각종 컴포넌트를 시간을 활용해서 변화
+      1. 스프라이트 변화시키는법 animation 탭내부로 외부 스프라이트를 드래그드랍해준다.
+      2. scale 0 > 1 20프레임에 걸쳐서 되게 만들어준다.
+   5. 기본 프리펩 이미지 크기를 0 0 0으로맞춰준다.
+   6. 기본 객체를 비활성화로 만들어준다.
+3. OnEnable : 스크립트가활성화 될때 실행되는 이벤트 함수
+
+#### 프레임 설정
+
+1. _프레임 설정하는법_ : `Application.targetFrameRate = 60;`
+2. Dongle Prefab내부로 가서 Rigidbody 2d에서 1. Interpolate 속성값 - None > Interpolate 1. 이전 프레임을 비교하여 움직임을 부드럽게 보정
+   GameManager.cs
+
+```cs
+public class GameManager : MonoBehaviour
+{
+	public static GameManager instance;
+
+	public Dongle lastDongle;
+	public GameObject donglePrefab;
+	public Transform dongleGroup;
+
+	void Awake()
+	{
+		if(instance==null){
+			instance = this;
+			Application.targetFrameRate = 60;
+		}
+	}
+
+	void Start()
+	{
+		NextDongle();
+	}
+
+	Dongle GetDongle(){
+		// 두번째 매개변수로 parent.transform를주기
+		GameObject instant = Instantiate(donglePrefab, dongleGroup);
+		Dongle instantDongle = instant.GetComponent<Dongle>();
+		return instantDongle;
+	}
+
+	void NextDongle(){
+		Dongle newDongle = GetDongle();
+		lastDongle = newDongle;
+		lastDongle.level = Random.Range(0,8);
+		lastDongle.gameObject.SetActive(true);
+		StartCoroutine(WaitNext());
+	}
+
+	IEnumerator WaitNext(){
+		while(lastDongle !=null){
+			yield return null;
+		}
+
+		// yield return null; // 한 프레임을 쉬는 코드
+		yield return new WaitForSeconds(2.5f);
+
+		NextDongle();
+	}
+
+	public void TouchDown(){
+		if(lastDongle == null)
+			return;
+
+		lastDongle.Drag();
+	}
+
+	public void TouchUp(){
+		if(lastDongle == null)
+			return;
+
+		lastDongle.Drop();
+		lastDongle = null;
+	}
+}
+```
+
+Dongle.cs
+
+```cs
+	public int level;
+	Animator anim;
+
+	void Awake()
+	{
+		rigid = GetComponent<Rigidbody2D>();
+		anim = GetComponent<Animator>();
+	}
+
+	void OnEnable()
+	{
+		anim.SetInteger("Level",level);
+	}
+```
+
 ###

@@ -3,14 +3,23 @@ using UnityEngine;
 
 public class Dongle : MonoBehaviour
 {
+    public int level;
     public bool isDrag; //기본값 false drag를 통해 true를 거쳐서 drop 후 다시 false
 
     Rigidbody2D rigid;
+    Animator anim;
 
     void Awake()
     {
         rigid = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
     }
+
+    void OnEnable()
+    {
+        anim.SetInteger("Level",level);
+    }
+
     void Update()
     {
         if(isDrag){
