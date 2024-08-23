@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Dongle : MonoBehaviour
 {
+    public ParticleSystem effect;
     public int level;
     public bool isDrag; //기본값 false drag를 통해 true를 거쳐서 drop 후 다시 false
     public bool isMerge; // 합쳐지는 중인지 상태를 제어하는 변수
@@ -114,10 +115,18 @@ public class Dongle : MonoBehaviour
     IEnumerator LevelUpRoutine(){
         yield return new WaitForSeconds(0.2f);
         anim.SetInteger("Level",++level); // 실제 레벨 상승을 늦게 하는 이유는 애니메이션 시간 때문!
+        
+        EffectPlay();
 
         GameManager.instance.maxLevel = Mathf.Max(level,GameManager.instance.maxLevel);
 
         yield return new WaitForSeconds(0.35f);
         isMerge = false;
+    }
+
+    void EffectPlay(){
+        effect.transform.position = transform.position;
+        effect.transform.localScale = transform.localScale;
+        effect.Play();
     }
 }

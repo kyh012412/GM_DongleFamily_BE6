@@ -825,8 +825,40 @@ Transform:
   - {fileID: 784105219}
   - {fileID: 1874665162}
   - {fileID: 1998373404}
+  - {fileID: 1742161821}
   m_Father: {fileID: 0}
   m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1742161820
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1742161821}
+  m_Layer: 0
+  m_Name: Effect Group
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1742161821
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1742161820}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1476002386}
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1874665161
 GameObject:
@@ -1190,8 +1222,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lastDongle: {fileID: 0}
-  donglePrefab: {fileID: 8260157674952672984, guid: fbf8b04c14a138e4aa26728ff46fb668, type: 3}
   dongleGroup: {fileID: 1998373404}
+  effectGroup: {fileID: 1742161821}
+  donglePrefab: {fileID: 8260157674952672984, guid: fbf8b04c14a138e4aa26728ff46fb668, type: 3}
+  effectPrefab: {fileID: 4423351795827322325, guid: 432b9f65eb2f5e448ac56b424f0500db, type: 3}
   maxLevel: 2
 --- !u!4 &2066350335
 Transform:

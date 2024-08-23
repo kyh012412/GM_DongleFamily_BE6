@@ -354,4 +354,94 @@ GameManager.cs
 	}
 ```
 
+### 물리 퍼즐게임 - 🌠멋진 이펙트 만들기 [B57]
+
+#### 파티클 꾸미기
+
+1. 하이라키에 particle system 추가 (Effect > particle system)(Effect)
+   1. 단시간에 입자가 많이 나오는 형태를 사용하기위해서는
+      1. Emission > Bursts 를 써야한다.
+   2. Shape
+      1. shape Circle
+      2. radius 0.5
+   3. Texture Sheet Animation
+      1. Mode sprite
+      2. sprite는 circle로 해준다.
+   4. Start lifetime 0.5~1
+   5. Start speed 10
+   6. looping 체크해제
+   7. Play on awake 꺼주기
+   8. Limit velocity over lifetime
+      1. drag 1
+   9. size over lifetime
+      1. 좌상단 우하단
+   10. color over lifetime
+       1. 중앙 하단 앵커 50% 하얀색
+       2. 75 노란색
+       3. 100 주황색
+   11. Trails : 이밪에 꼬리 혹은 리본 효과 추가
+       1. Renderer에 다시가보면 trail material이 생겨있음
+          1. Default-line 사용
+       2. Size affect lifetime 체크
+       3. width over trail - curve선택
+          1. 좌상단 우하향
+   12. Renderer에서 Order in layer값 2로 설정
+   13. Prefab화
+       1. 0,0,0 포지션확인 (로테이션은 무관)
+
+#### 이펙트 생성
+
+1. Dongle.cs에서 particle system effect 만드렁준다.
+
+#### 이펙트 실행
+
+1. Dongle.cs 1. EffectPlay() 메서드 생성 & 연결
+   GameManager.cs
+
+```cs
+    [Header("# Group")]
+    public Transform dongleGroup;
+    public Transform effectGroup;
+
+    [Header("# Prefab")]
+    public GameObject donglePrefab;
+    public GameObject effectPrefab;
+
+    Dongle GetDongle(){
+        // 이펙트 생성
+        GameObject instantEffectObj = Instantiate(effectPrefab, effectGroup);
+        ParticleSystem instantEffect = instantEffectObj.GetComponent<ParticleSystem>();
+
+        // 동글 생성
+        // 두번째 매개변수로 parent.transform를주기
+        GameObject instantDongleObj = Instantiate(donglePrefab, dongleGroup);
+        Dongle instantDongle = instantDongleObj.GetComponent<Dongle>();
+        instantDongle.effect = instantEffect;
+        return instantDongle;
+    }
+```
+
+Dongle.cs
+
+```cs
+	public ParticleSystem effect;
+
+	IEnumerator LevelUpRoutine(){
+		yield return new WaitForSeconds(0.2f);
+		anim.SetInteger("Level",++level); // 실제 레벨 상승을 늦게 하는 이유는 애니메이션 시간 때문!
+		EffectPlay();
+
+		GameManager.instance.maxLevel = Mathf.Max(level,GameManager.instance.maxLevel);
+
+		yield return new WaitForSeconds(0.35f);
+		isMerge = false;
+	}
+
+	void EffectPlay(){
+		effect.transform.position = transform.position;
+		effect.transform.localScale = transform.localScale;
+		effect.Play();
+	}
+```
+
 ###
