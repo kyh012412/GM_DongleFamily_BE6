@@ -683,7 +683,7 @@ Dongle.cs
 	}
 ```
 
-### 물리 퍼즐게임 - 쉽게 구현해보는 오브젝트풀링 [유니티 기초 강좌 B60]
+### 물리 퍼즐게임 - 쉽게 구현해보는 오브젝트풀링 [B60]
 
 #### 오브젝트 풀링
 
@@ -864,6 +864,212 @@ Dongle.cs
         rigid.angularVelocity = 0;
         rigid.simulated =false;
     }
+```
+
+### 물리 퍼즐게임 - 📱모바일 게임으로 완성하기 [BE6]
+
+#### 변수 정리
+
+1. Header를 사용하여 정리
+
+#### 점수 시스템 완성
+
+1. Canvas Scaler
+2. UI Scale Mode - Scale with Screen Size
+   1. 450 : 950
+3. Canvas > Text (Score Text)
+   1. 앵커 좌상단
+   2. pos x 10 y -5
+   3. 0 0
+   4. overflow
+   5. 폰트 주아체
+   6. 라벨 9999
+   7. GameManager에 연결
+4. lateUpdate : Updated 종료 후 실행되는 생명주기 함수
+5. 메서드 구현 후 테스트
+6. Score Text 를 복사 (Max Score Text)
+   1. 앵커 우상단
+   2. color c68444
+   3. GameManager 연결
+7. GameOverRoutine에서 갱신
+8. 테스트 / 정상
+
+#### 게임오버 UI
+
+1. Canvas > Image (End Group)
+   1. 앵커 전체크기
+   2. 알파 100
+2. End Group 내에 Image
+   1. 소스 End
+   2. set native size
+   3. pos y 70
+3. End Group 내에 Button
+   1. 가로 세로 180 130
+   2. pos y -60
+   3. 소스 이미지 panel
+4. End Group 내에 Button > Text
+   1. 라벨 다시 하기
+   2. 폰트 주아체
+   3. 크기 30
+   4. bottom 30
+5. End Group 내에 Button > Text 를 복사 (SubScore Text)
+   1. bottom 0 top 30
+   2. 라벨 점수 : 9999
+   3. 크기 20
+6. End Group 비활성화 하기
+7. GameManager.Reset() 메서드만들어주기
+8. End Group > Button OnClick에 연결해준기
+   1. navigation none;
+9. GameOver시 bgmPlayer.Stop()
+
+#### 게임 시작
+
+1. End Group을 복사 (Start Group)
+2. Start Group > Image
+   1. 이미지 소스 Title
+   2. Start Group > Button
+      1. pos y -60
+      2. 가로 세로 180 90
+   3. Start Group > button > Score Text 삭제
+   4. Start Group > button > Start Text
+      1. 라벨 게임 시작
+      2. bottom 15
+3. Score Text와 Max Score Text 는 비활성화
+4. PlayGround
+   1. Line 비활성화
+   2. Bottom 비활성화
+5. GameManager에서 초기화
+6. 게임시작 시 GameStart() 메서드가 실행되도록 연결
+
+#### 모바일 빌드
+
+1. Company Name, Product Name 설정
+2. Default Icon 설정
+3. Portrait 세팅
+4. _other settings_ 1. configuration 1. scripting background - IL2CPP 2. ARM64체크
+   GameManager.cs
+
+```cs
+public class GameManager : MonoBehaviour
+{
+	public static GameManager instance;
+
+	[Header("----------[ Core ]")]
+	public bool isOver;
+	public int score;
+	public int maxLevel;
+
+	[Header("----------[ Object Pooling ]")]
+	public GameObject donglePrefab;
+	public Transform dongleGroup;
+	public List<Dongle> donglePool;
+	public GameObject effectPrefab;
+	public Transform effectGroup;
+	public List<ParticleSystem> effectPool;
+
+	[Range(1,30)]
+	public int poolSize;
+	public int poolCursor;
+	public Dongle lastDongle;
+
+	[Header("----------[ Audio ]")]
+	public AudioSource bgmPlayer;
+	public AudioSource[] sfxPlayer;
+	public AudioClip[] sfxClips;
+	public enum Sfx { LevelUp, Next=3, Attach, Button, Over};
+	int sfxCursor;
+
+	[Header("----------[ UI ]")]
+	public GameObject startGroup;
+	public GameObject endGroup;
+	public Text scoreText;
+	public Text maxScoreText;
+	public Text subScoreText;
+
+	[Header("----------[ ETC ]")]
+	public GameObject line;
+	public GameObject bottom;
+
+	void Awake()
+	{
+		if(instance==null){
+			instance = this;
+			Application.targetFrameRate = 60;
+			donglePool = new List<Dongle>();
+			effectPool = new List<ParticleSystem>();
+
+			for(int index=0;index<poolSize;index++){
+				MakeDongle();
+			}
+
+			maxScoreText.text = PlayerPrefs.GetInt("MaxScore",0).ToString();
+		}
+	}
+
+	public void GameStart()
+	{
+		// 오브젝트 활성화
+		line.SetActive(true);
+		bottom.SetActive(true);
+		scoreText.gameObject.SetActive(true);
+		maxScoreText.gameObject.SetActive(true);
+		startGroup.SetActive(false);
+
+		bgmPlayer.Play();
+		SfxPlay(Sfx.Button);
+		Invoke("NextDongle",1.5f);
+	}
+
+	IEnumerator GameOverRoutine(){
+		// 1. 장면 안에 활성화 되어잇는 모든 동글 가져오기
+		Dongle[] dongles = FindObjectsOfType<Dongle>();
+
+		// 2. 지우기 전에 모든 동글의 물리효과 비활성화
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].rigid.simulated = false;
+		}
+
+		// 3. 1번의 목록을 하나씩 접근해서 지우기
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].Hide(Vector3.up*100);
+			yield return new WaitForSeconds(0.1f);
+		}      
+
+		yield return new WaitForSeconds(1f);
+
+		// 최고 점수 갱신
+		int maxScore = Mathf.Max(score,PlayerPrefs.GetInt("MaxScore",0));
+		PlayerPrefs.SetInt("MaxScore",maxScore);
+
+		// 게임오버 UI 표시
+		subScoreText.text = "점수 : "+scoreText.text;
+		endGroup.SetActive(true);
+
+		// 음향
+		bgmPlayer.Stop();
+		SfxPlay(Sfx.Over);
+	}
+
+	public void Reset(){
+		SfxPlay(Sfx.Button);
+		StartCoroutine(ResetCoroutine());
+	}
+
+	IEnumerator ResetCoroutine(){
+		yield return new WaitForSeconds(1f);
+		SceneManager.LoadScene(0);
+	}
+
+	void LateUpdate()
+	{
+		scoreText.text = score.ToString();
+	}
+
+	public void Update(){
+		if(Input.GetButtonDown("Cancel")){
+			Application.Quit();
+		}
+	}
 ```
 
 ###
