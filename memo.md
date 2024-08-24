@@ -571,4 +571,116 @@ Dongle.cs
 	}
 ```
 
+### 물리 퍼즐게임 - 채널링이 포함된 🎵 사운드 시스템 [B59]
+
+#### 배경음악
+
+1. GameManager 이하의 객체에 오디오소스 컴포넌트를 추가해준다.(BGM Player)
+2. GameManager 이하의 객체에 오디오소스 컴포넌트를 추가해준다.(SFX Player)
+3. sfx player와 sfx clips 초기화
+4. SfxPlay 메서드
+
+#### 효과음 배치
+
+GameManger.cs
+
+```cs
+	public AudioSource bgmPlayer;
+
+	public AudioSource[] sfxPlayer;
+
+	int sfxCursor;
+
+	public AudioClip[] sfxClips;
+
+	public enum Sfx { LevelUp, Next=3, Attach, Button, Over};
+
+	void Start()
+	{
+		bgmPlayer.Play();
+		NextDongle();
+	}
+
+	void NextDongle(){
+		if(isOver) return;
+
+		Dongle newDongle = GetDongle();
+		lastDongle = newDongle;
+		lastDongle.level = Random.Range(0,maxLevel);
+		lastDongle.gameObject.SetActive(true);
+
+		SfxPlay(Sfx.Next);
+		StartCoroutine(WaitNext());
+	}
+
+	IEnumerator GameOverRoutine(){
+		// 1. 장면 안에 활성화 되어잇는 모든 동글 가져오기
+		Dongle[] dongles = FindObjectsOfType<Dongle>();
+
+		// 2. 지우기 전에 모든 동글의 물리효과 비활성화
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].rigid.simulated = false;
+		}
+
+		// 3. 1번의 목록을 하나씩 접근해서 지우기
+		for(int index=0; index< dongles.Length;index++){
+			dongles[index].Hide(Vector3.up*100);
+			yield return new WaitForSeconds(0.1f);
+		}
+
+		yield return new WaitForSeconds(1f);
+
+		SfxPlay(Sfx.Over);
+	}
+
+	public void SfxPlay(Sfx type){
+		switch(type){
+			case Sfx.LevelUp:
+			sfxPlayer[sfxCursor].clip = sfxClips[Random.Range(0,3)];
+				break;
+			case Sfx.Next:
+			case Sfx.Attach: // 사물간에 부딪칠 때 나는 소리
+			case Sfx.Button:
+			case Sfx.Over:
+				sfxPlayer[sfxCursor].clip = sfxClips[(int)type];
+				break;
+		}
+
+		sfxPlayer[sfxCursor].Play();
+		sfxCursor = (sfxCursor+1) % sfxPlayer.Length;
+	}
+```
+
+Dongle.cs
+
+```cs
+	public bool isAttach;
+
+	IEnumerator LevelUpRoutine(){
+		yield return new WaitForSeconds(0.2f);
+		anim.SetInteger("Level",++level); // 실제 레벨 상승을 늦게 하는 이유는 애니메이션 시간 때문!
+
+		EffectPlay();
+		GameManager.instance.SfxPlay(GameManager.Sfx.LevelUp);
+
+		GameManager.instance.maxLevel = Mathf.Max(level,GameManager.instance.maxLevel);
+
+		yield return new WaitForSeconds(0.35f);
+		isMerge = false;
+	}
+
+	void OnCollisionEnter2D(Collision2D other)
+	{
+		StartCoroutine(AttachRoutine());
+	}
+
+	IEnumerator AttachRoutine(){
+		if(isAttach) yield break;
+		isAttach =true;
+		GameManager.instance.SfxPlay(GameManager.Sfx.Attach);
+		yield return new WaitForSeconds(0.2f);
+		isAttach = false;
+	}
+```
+
 ###

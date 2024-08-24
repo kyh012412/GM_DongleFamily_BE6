@@ -13,6 +13,12 @@ public class GameManager : MonoBehaviour
     public int score;
     public bool isOver;
 
+    public AudioSource bgmPlayer;
+    public AudioSource[] sfxPlayer;
+    int sfxCursor;
+    public AudioClip[] sfxClips;
+    public enum Sfx { LevelUp, Next=3, Attach, Button, Over};
+
     [Header("# Group")]
     public Transform dongleGroup;
     public Transform effectGroup;
@@ -31,6 +37,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        bgmPlayer.Play();
         NextDongle();
     }
 
@@ -54,6 +61,8 @@ public class GameManager : MonoBehaviour
         lastDongle = newDongle;
         lastDongle.level = Random.Range(0,maxLevel);
         lastDongle.gameObject.SetActive(true);
+
+        SfxPlay(Sfx.Next);
         StartCoroutine(WaitNext());
     }
 
@@ -94,6 +103,8 @@ public class GameManager : MonoBehaviour
     IEnumerator GameOverRoutine(){
         // 1. 장면 안에 활성화 되어잇는 모든 동글 가져오기
         Dongle[] dongles = FindObjectsOfType<Dongle>();
+
+        // 2. 지우기 전에 모든 동글의 물리효과 비활성화
         for(int index=0; index< dongles.Length;index++){
             dongles[index].rigid.simulated = false;
         }
@@ -103,5 +114,25 @@ public class GameManager : MonoBehaviour
             dongles[index].Hide(Vector3.up*100);
             yield return new WaitForSeconds(0.1f);
         }
+
+        yield return new WaitForSeconds(1f);
+
+        SfxPlay(Sfx.Over);
+    }
+
+    public void SfxPlay(Sfx type){
+        switch(type){
+            case Sfx.LevelUp:
+            sfxPlayer[sfxCursor].clip = sfxClips[Random.Range(0,3)];
+                break;
+            case Sfx.Next:
+            case Sfx.Attach: // 사물간에 부딪칠 때 나는 소리
+            case Sfx.Button:
+            case Sfx.Over:                
+                sfxPlayer[sfxCursor].clip = sfxClips[(int)type];
+                break;
+        }
+        sfxPlayer[sfxCursor].Play();
+        sfxCursor = (sfxCursor+1) % sfxPlayer.Length;
     }
 }

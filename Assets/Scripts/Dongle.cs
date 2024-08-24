@@ -6,9 +6,14 @@ public class Dongle : MonoBehaviour
 {
     public ParticleSystem effect;
     public int level;
+
+    [Header("# debug - status")]
     public bool isDrag; //기본값 false drag를 통해 true를 거쳐서 drop 후 다시 false
     public bool isMerge; // 합쳐지는 중인지 상태를 제어하는 변수
+    public bool isAttach;
 
+
+    [Header("# debug")]
     float deadTime;
 
     public Rigidbody2D rigid;
@@ -131,11 +136,25 @@ public class Dongle : MonoBehaviour
         anim.SetInteger("Level",++level); // 실제 레벨 상승을 늦게 하는 이유는 애니메이션 시간 때문!
         
         EffectPlay();
+        GameManager.instance.SfxPlay(GameManager.Sfx.LevelUp);
 
         GameManager.instance.maxLevel = Mathf.Max(level,GameManager.instance.maxLevel);
 
         yield return new WaitForSeconds(0.35f);
         isMerge = false;
+    }
+
+    void OnCollisionEnter2D(Collision2D other)
+    {
+        StartCoroutine(AttachRoutine());
+    }
+
+    IEnumerator AttachRoutine(){
+        if(isAttach) yield break;
+        isAttach =true;
+        GameManager.instance.SfxPlay(GameManager.Sfx.Attach);
+        yield return new WaitForSeconds(0.2f);
+        isAttach =false;
     }
 
     void OnTriggerStay2D(Collider2D other){
