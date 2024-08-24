@@ -1606,6 +1606,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lastDongle: {fileID: 0}
+  donglePool: []
+  effectPool: []
+  poolSize: 3
+  poolCursor: 0
   maxLevel: 2
   score: 0
   isOver: 0

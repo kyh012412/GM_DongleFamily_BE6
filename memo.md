@@ -683,4 +683,187 @@ Dongle.cs
 	}
 ```
 
+### 물리 퍼즐게임 - 쉽게 구현해보는 오브젝트풀링 [유니티 기초 강좌 B60]
+
+#### 오브젝트 풀링
+
+1. Instantiate, Destory를 사용할수록 파편화된 메모리 누적
+2. 오브젝트풀링 (ObjectPooling) : 미리 생성해둔 오브젝트 재활용
+
+#### 풀 생성
+
+1. List를 2개만들어준다.(동글,particle system)
+2. 다음과 같은 코드로편리하게 사용 가능한 하나의 방법이 있다.
+
+```cs
+    [Range(1,30)]
+    public int poolSize;
+    // 위와 같이 할경우 inspector에서 slider가 생겨서 사이즈 조절이편해짐
+```
+
+3. 리스트를 awake 단계에서 만들어준다.
+
+#### 풀사용
+
+1. 모든 dongle을 사용중일때 makedongle을하여 pool을 키워주고 그 대상을 사용한다.
+
+#### 재사용 로직
+
+1. active를 false할때 재사용을 위한 준비 코드
+   GameManager.cs
+
+```cs
+    public List<Dongle> donglePool;
+
+    public List<ParticleSystem> effectPool;
+
+
+
+    [Range(1,30)]
+
+    public int poolSize;
+
+    public int poolCursor;
+
+    void Awake()
+
+    {
+
+        if(instance==null){
+
+            instance = this;
+
+            Application.targetFrameRate = 60;
+
+            donglePool = new List<Dongle>();
+
+            effectPool = new List<ParticleSystem>();
+
+
+
+            for(int index=0;index<poolSize;index++){
+
+                MakeDongle();
+
+            }
+
+        }
+
+    }
+
+    void Start()
+
+    {
+
+        bgmPlayer.Play();
+
+        NextDongle();
+
+    }
+
+
+
+    Dongle MakeDongle(){
+
+        // 이펙트 생성
+
+        GameObject instantEffectObj = Instantiate(effectPrefab, effectGroup);
+
+        instantEffectObj.name = "Effect " + effectPool.Count;
+
+        ParticleSystem instantEffect = instantEffectObj.GetComponent<ParticleSystem>();
+
+        effectPool.Add(instantEffect);
+
+
+
+        // 동글 생성
+
+        // 두번째 매개변수로 parent.transform를주기
+
+        GameObject instantDongleObj = Instantiate(donglePrefab, dongleGroup);
+
+        instantDongleObj.name = "Dongle " + donglePool.Count;
+
+        Dongle instantDongle = instantDongleObj.GetComponent<Dongle>();
+
+        instantDongle.effect = instantEffect;
+
+        donglePool.Add(instantDongle);
+
+
+
+        return instantDongle;
+
+    }
+
+
+
+    Dongle GetDongle(){
+
+        for (int i = 0; i < donglePool.Count; i++)
+
+        {  
+
+            poolCursor = (poolCursor +1) % donglePool.Count;
+
+            if(!donglePool[poolCursor].gameObject.activeSelf){
+
+                return donglePool[poolCursor];
+
+            }
+
+        }
+
+        return MakeDongle();
+
+    }
+
+
+
+    void NextDongle(){
+
+        if(isOver) return;
+
+
+
+        lastDongle = GetDongle();
+
+        lastDongle.level = Random.Range(0,maxLevel);
+
+        lastDongle.gameObject.SetActive(true);
+
+
+
+        SfxPlay(Sfx.Next);
+
+        StartCoroutine(WaitNext());
+
+    }
+```
+
+Dongle.cs
+
+```cs
+    void OnDisable()
+    {
+        // 동글 속성 초기화
+        level = 0;
+        isDrag =false;
+        isMerge =false;
+        isAttach =false;
+
+        // 동글 트랜스폼 초기화
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = quaternion.identity;
+        transform.localScale =Vector3.zero;
+       
+        // 동글 물리 초기화
+        circleCollider2D.enabled =true;
+        rigid.velocity = Vector2.zero;
+        rigid.angularVelocity = 0;
+        rigid.simulated =false;
+    }
+```
+
 ###

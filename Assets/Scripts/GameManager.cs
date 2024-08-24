@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Numerics;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -9,6 +10,13 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
     public Dongle lastDongle;
+    public List<Dongle> donglePool;
+    public List<ParticleSystem> effectPool;
+
+    [Range(1,30)]
+    public int poolSize;
+    public int poolCursor;
+
     public int maxLevel;
     public int score;
     public bool isOver;
@@ -32,6 +40,12 @@ public class GameManager : MonoBehaviour
         if(instance==null){
             instance = this;
             Application.targetFrameRate = 60;
+            donglePool = new List<Dongle>();
+            effectPool = new List<ParticleSystem>();
+
+            for(int index=0;index<poolSize;index++){
+                MakeDongle();
+            }
         }
     }
 
@@ -41,24 +55,39 @@ public class GameManager : MonoBehaviour
         NextDongle();
     }
 
-    Dongle GetDongle(){
+    Dongle MakeDongle(){
         // 이펙트 생성
         GameObject instantEffectObj = Instantiate(effectPrefab, effectGroup);
+        instantEffectObj.name = "Effect " + effectPool.Count;
         ParticleSystem instantEffect = instantEffectObj.GetComponent<ParticleSystem>();
+        effectPool.Add(instantEffect);
 
         // 동글 생성
         // 두번째 매개변수로 parent.transform를주기
         GameObject instantDongleObj = Instantiate(donglePrefab, dongleGroup);
+        instantDongleObj.name = "Dongle " + donglePool.Count;
         Dongle instantDongle = instantDongleObj.GetComponent<Dongle>();
         instantDongle.effect = instantEffect;
+        donglePool.Add(instantDongle);
+
         return instantDongle;
+    }
+
+    Dongle GetDongle(){
+        for (int i = 0; i < donglePool.Count; i++)
+        {   
+            poolCursor = (poolCursor +1) % donglePool.Count;
+            if(!donglePool[poolCursor].gameObject.activeSelf){
+                return donglePool[poolCursor];
+            }
+        }
+        return MakeDongle();
     }
 
     void NextDongle(){
         if(isOver) return;
 
-        Dongle newDongle = GetDongle();
-        lastDongle = newDongle;
+        lastDongle = GetDongle();
         lastDongle.level = Random.Range(0,maxLevel);
         lastDongle.gameObject.SetActive(true);
 
